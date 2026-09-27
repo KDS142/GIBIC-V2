@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ISDA — Intelligent System for Data-Driven Aquaculture</title>
+  <meta name="description" content="ISDA: Enter your pond's pH, temperature, and turbidity to get a fish species recommendation and care tips." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            pond: { DEEP: '#123832', mid: '#1F5C54', line: '#cfe0da' },
+            mist: '#F0F3EE',
+            ink: '#16241F',
+            clay: { DEFAULT: '#B8752E', light: '#E4B76C' },
+          },
+          fontFamily: {
+            display: ['Fraunces', 'serif'],
+            body: ['"Work Sans"', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body { background-color: #F0F3EE; }
+    .wave-band {
+      background-image: repeating-linear-gradient(
+        -6deg,
+        transparent 0 18px,
+        rgba(255,255,255,0.06) 18px 20px
+      );
+    }
+    /* Hide native browser spinners on number inputs to maintain a clean UI and preserve space for metrics like pH and turbidity. */
+    input[type=number] {
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
+    }
+  </style>
+</head>
+
+<body class="font-body text-ink min-h-screen flex flex-col">
+
+  <!-- Hero -->
+  <header class="bg-pond-DEEP wave-band text-mist">
+    <div class="max-w-5xl mx-auto px-5 md:px-8 pt-10 pb-8 sm:pt-14 sm:pb-10
+                md:flex md:items-center md:justify-between md:gap-10">
+      <div class="max-w-md">
+        <p class="text-clay-light text-sm tracking-wide font-medium">ISDA — Pond advisory</p>
+        <h1 class="font-display text-3xl sm:text-4xl font-semibold mt-2 leading-tight">
+          Read your pond,<br class="hidden sm:block" /> know your fish.
+        </h1>
+        <p class="mt-3 text-mist/80 text-sm sm:text-base">
+          Enter today's readings and get a species recommendation plus care tips for your pond, in under a minute.
+        </p>
+      </div>
+      <svg viewBox="0 0 160 120" class="hidden md:block w-40 lg:w-48 shrink-0" aria-hidden="true">
+        <circle cx="80" cy="60" r="6" fill="#E4B76C"/>
+        <circle cx="80" cy="60" r="22" fill="none" stroke="#3E7C89" stroke-width="1.5" opacity="0.6"/>
+        <circle cx="80" cy="60" r="40" fill="none" stroke="#3E7C89" stroke-width="1.5" opacity="0.4"/>
+        <circle cx="80" cy="60" r="58" fill="none" stroke="#3E7C89" stroke-width="1.5" opacity="0.25"/>
+      </svg>
+    </div>
+  </header>
+
+  <main class="flex-1 w-full max-w-5xl mx-auto px-5 md:px-8 -mt-6 pb-16">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-6 lg:gap-8 items-start">
+
+      <!-- Form: styled like a field logbook -->
+      <form id="pond-form" novalidate
+        class="md:col-span-2 md:sticky md:top-8 bg-white border border-pond-line rounded-lg shadow-sm p-5 sm:p-6">
+        <h2 class="font-display text-lg font-semibold text-pond-DEEP">Today's readings</h2>
+
+        <div class="mt-5 space-y-5">
+
+          <!-- pH + Temperature, side by side once there's room -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <div class="flex items-baseline justify-between">
+                <label for="ph" class="text-sm font-medium text-ink">pH level</label>
+                <span class="text-xs text-ink/50">0 – 14</span>
+              </div>
+              <input id="ph" name="ph" type="number" step="0.1" inputmode="decimal" autocomplete="off" required
+                aria-describedby="hint-ph error-ph"
+                class="mt-1.5 w-full rounded-md border border-pond-line bg-mist/40 px-3 py-2.5 text-base
+                       focus:outline-none focus:ring-2 focus:ring-pond-mid focus:border-pond-mid"
+                placeholder="e.g. 7.2" />
+              <p id="hint-ph" class="mt-1.5 text-xs text-ink/50">Neutral tap water is about 7; most pond fish do best around 6.5–8.5.</p>
+              <p id="error-ph" class="error-msg mt-1 text-sm text-red-600 hidden" data-for="ph" role="alert"></p>
+            </div>
+
+            <div>
+              <div class="flex items-baseline justify-between">
+                <label for="temperature" class="text-sm font-medium text-ink">Water temperature</label>
+                <span class="text-xs text-ink/50">0 – 50</span>
+              </div>
+              <div class="relative mt-1.5">
+                <input id="temperature" name="temperature" type="number" step="0.1" inputmode="decimal" autocomplete="off" required
+                  aria-describedby="unit-temperature hint-temperature error-temperature"
+                  class="w-full rounded-md border border-pond-line bg-mist/40 pl-3 pr-11 py-2.5 text-base
+                         focus:outline-none focus:ring-2 focus:ring-pond-mid focus:border-pond-mid"
+                  placeholder="e.g. 27.5" />
+                <span id="unit-temperature" class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink/40">°C</span>
+              </div>
+              <p id="hint-temperature" class="mt-1.5 text-xs text-ink/50">Most warm-water pond fish do best between about 24–30°C.</p>
+              <p id="error-temperature" class="error-msg mt-1 text-sm text-red-600 hidden" data-for="temperature" role="alert"></p>
+            </div>
+          </div>
+
+          <!-- Turbidity + Pond size, side by side once there's room -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <div class="flex items-baseline justify-between">
+                <label for="turbidity" class="text-sm font-medium text-ink">Turbidity</label>
+                <span class="text-xs text-ink/50">0 – 3000</span>
+              </div>
+              <div class="relative mt-1.5">
+                <input id="turbidity" name="turbidity" type="number" step="0.1" inputmode="decimal" autocomplete="off" required
+                  aria-describedby="unit-turbidity hint-turbidity error-turbidity"
+                  class="w-full rounded-md border border-pond-line bg-mist/40 pl-3 pr-14 py-2.5 text-base
+                         focus:outline-none focus:ring-2 focus:ring-pond-mid focus:border-pond-mid"
+                  placeholder="e.g. 18" />
+                <span id="unit-turbidity" class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink/40">NTU</span>
+              </div>
+              <p id="hint-turbidity" class="mt-1.5 text-xs text-ink/50">Clear tap water is under 1 NTU; light tea color is roughly 10–50 NTU.</p>
+              <p id="error-turbidity" class="error-msg mt-1 text-sm text-red-600 hidden" data-for="turbidity" role="alert"></p>
+            </div>
+
+            <div>
+              <label for="pond_size_sqm" class="text-sm font-medium text-ink">Pond size</label>
+              <div class="relative mt-1.5">
+                <input id="pond_size_sqm" name="pond_size_sqm" type="number" step="1" inputmode="decimal" autocomplete="off"
+                  aria-describedby="unit-pond_size_sqm hint-pond_size_sqm error-pond_size_sqm"
+                  class="w-full rounded-md border border-pond-line bg-mist/40 pl-3 pr-11 py-2.5 text-base
+                         focus:outline-none focus:ring-2 focus:ring-pond-mid focus:border-pond-mid"
+                  placeholder="500" value="500" />
+                <span id="unit-pond_size_sqm" class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink/40">m²</span>
+              </div>
+              <p id="hint-pond_size_sqm" class="mt-1.5 text-xs text-ink/50">Surface area — pair with depth below for a real volume estimate.</p>
+              <p id="error-pond_size_sqm" class="error-msg mt-1 text-sm text-red-600 hidden" data-for="pond_size_sqm" role="alert"></p>
+            </div>
+          </div>
+
+          <!-- Average depth: Full row to ensure the detailed explanation remains readable -->
+          <div>
+            <label for="pond_depth_m" class="text-sm font-medium text-ink">Average depth</label>
+            <div class="relative mt-1.5 max-w-[220px]">
+              <input id="pond_depth_m" name="pond_depth_m" type="number" step="0.1" inputmode="decimal" autocomplete="off"
+                aria-describedby="unit-pond_depth_m hint-pond_depth_m error-pond_depth_m"
+                class="w-full rounded-md border border-pond-line bg-mist/40 pl-3 pr-9 py-2.5 text-base
+                       focus:outline-none focus:ring-2 focus:ring-pond-mid focus:border-pond-mid"
+                placeholder="1.2" value="1.2" />
+              <span id="unit-pond_depth_m" class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink/40">m</span>
+            </div>
+            <p id="hint-pond_depth_m" class="mt-1.5 text-xs text-ink/50">
+              Fish bioload depends on water volume, not just surface area. Most small ponds run 1–1.5 m deep — adjust if yours differs, or leave the default.
+            </p>
+            <p id="error-pond_depth_m" class="error-msg mt-1 text-sm text-red-600 hidden" data-for="pond_depth_m" role="alert"></p>
+          </div>
+
+        </div>
+
+        <p id="form-error" class="mt-4 text-sm text-red-600 hidden" role="alert"></p>
+
+        <button type="submit" id="submit-btn"
+          class="mt-6 w-full bg-clay hover:bg-clay/90 disabled:opacity-60 disabled:cursor-not-allowed
+                 text-white font-medium py-3 rounded-md transition-colors motion-reduce:transition-none
+                 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-clay
+                 inline-flex items-center justify-center gap-2">
+          <svg id="submit-spinner" class="hidden animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z"></path>
+          </svg>
+          <span id="submit-label">Get recommendation</span>
+        </button>
+      </form>
+
+      <!-- Results: Always present, three interchangeable states -->
+      <section id="result" class="md:col-span-3" aria-live="polite">
+        <div class="bg-white border border-pond-line rounded-lg shadow-sm p-5 sm:p-6 min-h-[16rem] flex flex-col">
+
+          <!-- Empty state -->
+          <div id="result-empty" class="m-auto text-center max-w-xs py-6">
+            <svg viewBox="0 0 64 64" class="w-12 h-12 mx-auto text-pond-line" fill="none" aria-hidden="true">
+              <path d="M8 32c6-10 42-10 48 0-6 10-42 10-48 0z" stroke="currentColor" stroke-width="2.5"/>
+              <circle cx="42" cy="30" r="2" fill="currentColor"/>
+            </svg>
+            <p class="mt-3 font-display text-base font-semibold text-pond-DEEP">Your recommendation will show up here</p>
+            <p class="mt-1.5 text-sm text-ink/60">Fill in today's readings and submit to see a species pick and care tips.</p>
+          </div>
+
+          <!-- Loading state -->
+          <div id="result-loading" class="hidden m-auto text-center py-6">
+            <svg class="animate-spin h-8 w-8 mx-auto text-pond-mid" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z"></path>
+            </svg>
+            <p class="mt-3 text-sm text-ink/60">Analyzing your pond's readings…</p>
+          </div>
+
+          <!-- Content state -->
+          <div id="result-content" class="hidden">
+            <p class="text-sm text-ink/50">Recommended species</p>
+            <h2 id="fish-name" tabindex="-1" class="font-display text-2xl font-semibold text-pond-DEEP mt-1 outline-none"></h2>
+
+            <div class="mt-4">
+              <div class="flex justify-between text-sm mb-1">
+                <span class="text-ink/70">Confidence</span>
+                <span id="confidence-label" class="font-medium"></span>
+              </div>
+              <div class="h-2.5 rounded-full bg-mist border border-pond-line overflow-hidden">
+                <div id="confidence-fill" class="h-full bg-pond-mid rounded-full motion-reduce:transition-none" style="width:0%; transition: width 0.6s ease"></div>
+              </div>
+            </div>
+
+            <p id="advisory-note" class="hidden mt-4 text-sm bg-clay-light/20 border border-clay-light text-pond-DEEP rounded-md px-3 py-2"></p>
+
+            <div class="mt-5 pt-5 border-t border-pond-line">
+              <p class="text-sm font-medium text-ink/70 mb-2">Advisory</p>
+              <div id="advisory-text" class="text-sm leading-relaxed text-ink border-l-2 border-clay pl-4 max-w-prose"></div>
+            </div>
+
+            <button id="reset-btn" type="button"
+              class="mt-6 w-full sm:w-auto border border-pond-DEEP text-pond-DEEP hover:bg-pond-DEEP hover:text-white
+                     font-medium py-2.5 px-5 rounded-md transition-colors motion-reduce:transition-none
+                     focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pond-DEEP">
+              Check another reading
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="text-center text-xs text-ink/40 pb-8 px-5">
+    <p>Recommendations are a guide, not a substitute for local expert advice.</p>
+    <p class="mt-1">[ISDA] Intelligent System for Data-driven Aquaculture <br> Built by Strelitzia Studios</p>
+  </footer>
+
+<script>
+(() => {
+  const API_BASE = '';
+  const ENDPOINT = API_BASE + '/api/predict-and-advise';
+  const REQUEST_TIMEOUT_MS = 30000;
+
+  const FIELD_LIMITS = {
+    ph: { min: 0, max: 14, label: 'pH' },
+    temperature: { min: 0, max: 50, label: 'Temperature' },
+    turbidity: { min: 0, max: 3000, label: 'Turbidity' },
+    pond_size_sqm: { min: 0, max: 1000000, label: 'Pond size', exclusiveMin: true },
+    pond_depth_m: { min: 0, max: 50, label: 'Average depth', exclusiveMin: true },
+  };
+
+  // Client-side fallbacks for optional fields. These match the backend's Pydantic defaults so empty inputs don't fail validation.
+  const OPTIONAL_DEFAULTS = { pond_size_sqm: 500, pond_depth_m: 1.2 };
+
+  function limitMessage(limits) {
+    const lower = limits.exclusiveMin ? `greater than ${limits.min}` : `at least ${limits.min}`;
+    return `${limits.label} must be ${lower} and at most ${limits.max}.`;
+  }
+
+  const form = document.getElementById('pond-form');
+  const submitBtn = document.getElementById('submit-btn');
+  const submitLabel = document.getElementById('submit-label');
+  const submitSpinner = document.getElementById('submit-spinner');
+  const formError = document.getElementById('form-error');
+  const resetBtn = document.getElementById('reset-btn');
+
+  const resultEmpty = document.getElementById('result-empty');
+  const resultLoading = document.getElementById('result-loading');
+  const resultContent = document.getElementById('result-content');
+
+  let isSubmitting = false;
+
+  function setResultState(state) {
+    resultEmpty.classList.toggle('hidden', state !== 'empty');
+    resultLoading.classList.toggle('hidden', state !== 'loading');
+    resultContent.classList.toggle('hidden', state !== 'content');
+  }
+
+  function clearFieldErrors() {
+    document.querySelectorAll('.error-msg').forEach(el => {
+      el.textContent = '';
+      el.classList.add('hidden');
+    });
+    document.querySelectorAll('#pond-form input').forEach(el => {
+      el.classList.remove('border-red-500');
+      el.removeAttribute('aria-invalid');
+    });
+    formError.textContent = '';
+    formError.classList.add('hidden');
+  }
+
+  function showFieldError(name, message) {
+    const el = document.querySelector(`.error-msg[data-for="${name}"]`);
+    const input = document.getElementById(name);
+    if (el) { el.textContent = message; el.classList.remove('hidden'); }
+    if (input) {
+      input.classList.add('border-red-500');
+      input.setAttribute('aria-invalid', 'true');
+    }
+  }
+
+  function showFormError(message) {
+    formError.textContent = message;
+    formError.classList.remove('hidden');
+  }
+
+  function validate(values) {
+    let valid = true;
+    let firstInvalidField = null;
+    for (const [name, limits] of Object.entries(FIELD_LIMITS)) {
+      const raw = values[name];
+      let fieldValid = true;
+      if (raw === '' || raw === null || raw === undefined || Number.isNaN(raw)) {
+        showFieldError(name, `${limits.label} is required.`);
+        fieldValid = false;
+      } else {
+        const tooLow = limits.exclusiveMin ? raw <= limits.min : raw < limits.min;
+        if (tooLow || raw > limits.max) {
+          showFieldError(name, limitMessage(limits));
+          fieldValid = false;
+        }
+      }
+      if (!fieldValid) {
+        valid = false;
+        if (!firstInvalidField) firstInvalidField = name;
+      }
+    }
+    if (firstInvalidField) document.getElementById(firstInvalidField).focus();
+    return valid;
+  }
+
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // Safely render the AI's response: Escape all HTML to prevent XSS, then convert safe plain-text/markdown into standard tags.
+  function renderAdvisory(text) {
+    const escaped = escapeHtml(text);
+    const withBold = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    return withBold.replace(/\n/g, '<br>');
+  }
+
+  function prettyFishName(raw) {
+    const spaced = raw.replace(/([a-z])([A-Z])/g, '$1 $2');
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+  }
+
+  function setLoading(loading) {
+    isSubmitting = loading;
+    submitBtn.disabled = loading;
+    submitSpinner.classList.toggle('hidden', !loading);
+    submitLabel.textContent = loading ? 'Reading the pond…' : 'Get recommendation';
+  }
+
+  async function submitReading(payload) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    let response;
+    try {
+      response = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        throw new Error('That took too long to respond. Please try again.');
+      }
+      throw new Error("Can't reach the server. Check your connection and try again.");
+    }
+    clearTimeout(timeoutId);
+
+    let data = null;
+    try {
+      data = await response.json();
+    } catch (_) {
+      // no JSON body
+    }
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        throw new Error((data && data.detail) || 'Too many requests. Please wait a moment and try again.');
+      }
+      if (response.status === 422 && data && Array.isArray(data.errors)) {
+        data.errors.forEach(e => showFieldError(e.field, e.message));
+        throw new Error(data.detail || 'Some of those readings look invalid.');
+      }
+      throw new Error((data && data.detail) || 'Something went wrong. Please try again in a moment.');
+    }
+
+    return data;
+  }
+
+  function renderResult(data) {
+    document.getElementById('fish-name').textContent = prettyFishName(data.recommended_fish);
+    const pct = Math.max(0, Math.min(100, data.confidence_percentage));
+    document.getElementById('confidence-label').textContent = `${pct.toFixed(1)}%`;
+    document.getElementById('confidence-fill').style.width = `${pct}%`;
+
+    const note = document.getElementById('advisory-note');
+    if (data.ai_advisory_available === false) {
+      note.textContent = 'AI insights are limited right now — showing the core prediction only.';
+      note.classList.remove('hidden');
+    } else {
+      note.classList.add('hidden');
+    }
+
+    document.getElementById('advisory-text').innerHTML = renderAdvisory(data.ai_advisory || '');
+    setResultState('content');
+    const heading = document.getElementById('fish-name');
+    heading.focus();
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+
+    clearFieldErrors();
+
+    function fieldValue(id) {
+      const raw = document.getElementById(id).value.trim();
+      if (raw === '' && id in OPTIONAL_DEFAULTS) return OPTIONAL_DEFAULTS[id];
+      return parseFloat(raw);
+    }
+
+    const values = {
+      ph: fieldValue('ph'),
+      temperature: fieldValue('temperature'),
+      turbidity: fieldValue('turbidity'),
+      pond_size_sqm: fieldValue('pond_size_sqm'),
+      pond_depth_m: fieldValue('pond_depth_m'),
+    };
+
+    if (!validate(values)) {
+      showFormError('Please fix the highlighted fields above.');
+      return;
+    }
+
+    setLoading(true);
+    setResultState('loading');
+    try {
+      const data = await submitReading(values);
+      renderResult(data);
+    } catch (err) {
+      showFormError(err.message || 'Something went wrong. Please try again.');
+      setResultState('empty');
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    setResultState('empty');
+    clearFieldErrors();
+    document.getElementById('ph').focus();
+  });
+})();
+
+</script>
+</body>
+</html>
