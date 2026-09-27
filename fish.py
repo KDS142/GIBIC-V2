@@ -259,7 +259,7 @@ Provide an easy-to-read, encouraging assessment covering:
     try:
         ai_response = await asyncio.wait_for(
             genai_client.aio.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.8-flash",
                 contents=prompt,
             ),
             timeout=GEMINI_TIMEOUT_SECONDS,
