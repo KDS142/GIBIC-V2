@@ -237,7 +237,7 @@ async def predict_and_advise(data: FarmDataRequest):
 
     volume_m3 = data.pond_size_sqm * data.pond_depth_m
 
-    prompt = f"""You are an aquaculture advisor providing a concise report for a farmer's mobile app.
+    prompt =f"""You are an aquaculture advisor providing a concise report for a farmer's mobile app.
 
 Pond Sensor Readings:
 - pH: {data.ph}
@@ -255,6 +255,12 @@ Provide an easy-to-read, encouraging assessment covering:
 1. Water Quality Status (safe vs caution)
 2. Expected Harvest/Stocking Yield for this pond size
 3. Two key daily maintenance tips
+
+# EXPLICITLY INSTRUCT THE AI TO AVOID UNWANTED FORMATTING
+FORMATTING RULES:
+- Do NOT use emojis.
+- Do NOT use markdown headers (like ### or ####) or horizontal lines (---).
+- You may use **bold** text for emphasis.
 """
     try:
         ai_response = await asyncio.wait_for(
