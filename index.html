@@ -609,8 +609,6 @@
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#39;");
         }
-
-        // Safely render the AI's response: Escape all HTML to prevent XSS, then convert safe plain-text/markdown into standard tags.
         function renderAdvisory(text) {
           const escaped = escapeHtml(text);
           const withBold = escaped.replace(
