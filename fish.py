@@ -51,7 +51,7 @@ ALLOWED_ORIGINS = [
 ENABLE_DOCS = os.environ.get("ENABLE_DOCS", "true").lower() == "true"
 RATE_LIMIT_MAX_REQUESTS = int(os.environ.get("RATE_LIMIT_MAX_REQUESTS", "20"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.environ.get("RATE_LIMIT_WINDOW_SECONDS", "60"))
-GEMINI_TIMEOUT_SECONDS = float(os.environ.get("GEMINI_TIMEOUT_SECONDS", "20"))
+GEMINI_TIMEOUT_SECONDS = float(os.environ.get("GEMINI_TIMEOUT_SECONDS", "8"))
 
 if not GEMINI_API_KEY:
     logger.warning(
